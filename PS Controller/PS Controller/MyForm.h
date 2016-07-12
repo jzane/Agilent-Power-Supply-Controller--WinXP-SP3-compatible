@@ -26,19 +26,19 @@ namespace PSController {
 
 
 	ViSession defaultRM; /* Resource manager id */
-ViSession power_supply; /* Identifies power supply */
-int bGPIB = 0; /* Set the number to 0 for use with the RS-232
-               interface */
-long ErrorStatus; /* VISA Error code */
-char commandString[256];
-char ReadBuffer[256];
-void delay(clock_t wait);
-void SendSCPI(char* pString);
-void CheckError(char* pMessage);
-double voltage; /* Value of voltage sent to power supply */
-char Buffer[256]; /* String returned from power supply */
-double current; /* Value of current output of power supply */
-bool cancel_var; //var holds whether to stay in loop or not
+	ViSession power_supply; /* Identifies power supply */
+	int bGPIB = 0; /* Set the number to 0 for use with the RS-232
+				   interface */
+	long ErrorStatus; /* VISA Error code */
+	char commandString[256];
+	char ReadBuffer[256];
+	void delay(clock_t wait);
+	void SendSCPI(char* pString);
+	void CheckError(char* pMessage);
+	double voltage; /* Value of voltage sent to power supply */
+	char Buffer[256]; /* String returned from power supply */
+	double current; /* Value of current output of power supply */
+	bool cancel_var; //var holds whether to stay in loop or not
 
 
 
@@ -61,106 +61,106 @@ bool cancel_var; //var holds whether to stay in loop or not
 		}
 
 
-		
+
 		//////////////////////////////////////////////////////////
 		//user defined functions
-		
+
 		void MyForm::OpenPort()
 		{
 			std::string comm;
 			comm = msclr::interop::marshal_as<std::string>(this->textBox1->Text); //wrapper to convert Ssytem::String to std::string
 			//comm is now std::string
-    const char * p = comm.c_str(); //converting std::string to char *
+			const char * p = comm.c_str(); //converting std::string to char *
 
-    char GPIB_Address[3];
-    char COM_Address[2];
-    char VISA_address[40]; // Complete VISA address sent to card 
-    if(bGPIB)
-        strcpy(GPIB_Address,"5"); // Select GPIB address between 0 to 30
-    else
-        strcpy(COM_Address,p); // Set the number to 2 for COM2 port 
-    if(bGPIB){ // For use with GPIB 7 address, use "GPIB::7::INSTR" address format 
-        strcpy(VISA_address,"GPIB::");
-        strcat(VISA_address,GPIB_Address);
-        strcat(VISA_address,"::INSTR");
-    }
-    else{ // For use with COM2 port, use "ASRL2::INSTR" address format 
-        strcpy(VISA_address,"ASRL");
-        strcat(VISA_address,COM_Address);
-        strcat(VISA_address,"::INSTR");
-    }
-    // Open communication session with the power supply 
-    ErrorStatus = viOpenDefaultRM(&defaultRM);
-    ErrorStatus = viOpen(defaultRM,VISA_address,0,0,&power_supply);
-    CheckError((char *)"Unable to open port");
-    if(!bGPIB)
-        SendSCPI((char *)"System:Remote"); //added to cast as char *
-    delay(500);
-	
+			char GPIB_Address[3];
+			char COM_Address[2];
+			char VISA_address[40]; // Complete VISA address sent to card 
+			if(bGPIB)
+				strcpy(GPIB_Address,"5"); // Select GPIB address between 0 to 30
+			else
+				strcpy(COM_Address,p); // Set the number to 2 for COM2 port 
+			if(bGPIB){ // For use with GPIB 7 address, use "GPIB::7::INSTR" address format 
+				strcpy(VISA_address,"GPIB::");
+				strcat(VISA_address,GPIB_Address);
+				strcat(VISA_address,"::INSTR");
+			}
+			else{ // For use with COM2 port, use "ASRL2::INSTR" address format 
+				strcpy(VISA_address,"ASRL");
+				strcat(VISA_address,COM_Address);
+				strcat(VISA_address,"::INSTR");
+			}
+			// Open communication session with the power supply 
+			ErrorStatus = viOpenDefaultRM(&defaultRM);
+			ErrorStatus = viOpen(defaultRM,VISA_address,0,0,&power_supply);
+			CheckError((char *)"Unable to open port");
+			if(!bGPIB)
+				SendSCPI((char *)"System:Remote"); //added to cast as char *
+			delay(500);
+
 		}//end openPort()
 
 
 
 		////////////////////////////////////////////////////////
 		//close port
-				void MyForm::ClosePort()
-{
-    /* Close the communication port */
-    viClose(power_supply);
-    viClose(defaultRM);
-}//end closeport
+		void MyForm::ClosePort()
+		{
+			/* Close the communication port */
+			viClose(power_supply);
+			viClose(defaultRM);
+		}//end closeport
 
 
 
-				////////////////////////////////////////////////////////
-				//check error
-				void MyForm::CheckError(char* pMessage)
-{
-    if (ErrorStatus < VI_SUCCESS){
-        int error = (int)ErrorStatus; //casting long to int
+		////////////////////////////////////////////////////////
+		//check error
+		void MyForm::CheckError(char* pMessage)
+		{
+			if (ErrorStatus < VI_SUCCESS){
+				int error = (int)ErrorStatus; //casting long to int
 
-		this->label18->Text = gcnew String(pMessage); //creating System::String data using char * type as argument
-
-
-        ClosePort();
-
-    }
-    else
-    {
-		this->label18->Text = "";
-
-    }
-}//end check error
+				this->label18->Text = gcnew String(pMessage); //creating System::String data using char * type as argument
 
 
-				////////////////////////////////////////////////////
-				//send scpi to device
-				void MyForm::SendSCPI(char* pString)
-{
-    char* pdest;
-    strcpy(commandString,pString);
-    strcat(commandString,(ViString)"\n");
-    ErrorStatus = viPrintf(power_supply,commandString);
-    CheckError((ViString)"Can’t Write to Driver");
-    if (bGPIB == 0)
-        delay(70); /* Unit is milliseconds */ //NEEDS TO BE HERE!!!!!!!!!!!!!!!!!!!!!
-    pdest = strchr(commandString, '?'); /* Search for query command */
-    if( pdest != NULL ){
-        ErrorStatus = viScanf(power_supply,(char *)"%s",&ReadBuffer);
-        CheckError((ViString)"Can’t Read From Driver");
+				ClosePort();
 
-        strcpy(pString,ReadBuffer);
-    }
-}//end sendSCPI
+			}
+			else
+			{
+				this->label18->Text = "";
 
-				///////////////////////////////////////////////
-				//delay time
-				void MyForm::delay(clock_t wait)
-{
-    clock_t goal;
-    goal = wait + clock();
-    while( goal > clock() ) ;
-}
+			}
+		}//end check error
+
+
+		////////////////////////////////////////////////////
+		//send scpi to device
+		void MyForm::SendSCPI(char* pString)
+		{
+			char* pdest;
+			strcpy(commandString,pString);
+			strcat(commandString,(ViString)"\n");
+			ErrorStatus = viPrintf(power_supply,commandString);
+			CheckError((ViString)"Can’t Write to Driver");
+			if (bGPIB == 0)
+				delay(70); /* Unit is milliseconds */ //NEEDS TO BE HERE!!!!!!!!!!!!!!!!!!!!!
+			pdest = strchr(commandString, '?'); /* Search for query command */
+			if( pdest != NULL ){
+				ErrorStatus = viScanf(power_supply,(char *)"%s",&ReadBuffer);
+				CheckError((ViString)"Can’t Read From Driver");
+
+				strcpy(pString,ReadBuffer);
+			}
+		}//end sendSCPI
+
+		///////////////////////////////////////////////
+		//delay time
+		void MyForm::delay(clock_t wait)
+		{
+			clock_t goal;
+			goal = wait + clock();
+			while( goal > clock() ) ;
+		}
 
 
 
@@ -349,6 +349,7 @@ bool cancel_var; //var holds whether to stay in loop or not
 			// radioButton1
 			// 
 			this->radioButton1->AutoSize = true;
+			this->radioButton1->Cursor = System::Windows::Forms::Cursors::Hand;
 			this->radioButton1->Location = System::Drawing::Point(54, 132);
 			this->radioButton1->Name = L"radioButton1";
 			this->radioButton1->Size = System::Drawing::Size(76, 17);
@@ -356,10 +357,12 @@ bool cancel_var; //var holds whether to stay in loop or not
 			this->radioButton1->TabStop = true;
 			this->radioButton1->Text = L"Output ON";
 			this->radioButton1->UseVisualStyleBackColor = true;
+			this->radioButton1->CheckedChanged += gcnew System::EventHandler(this, &MyForm::radioButton1_CheckedChanged);
 			// 
 			// radioButton2
 			// 
 			this->radioButton2->AutoSize = true;
+			this->radioButton2->Cursor = System::Windows::Forms::Cursors::Hand;
 			this->radioButton2->Location = System::Drawing::Point(136, 132);
 			this->radioButton2->Name = L"radioButton2";
 			this->radioButton2->Size = System::Drawing::Size(80, 17);
@@ -367,6 +370,7 @@ bool cancel_var; //var holds whether to stay in loop or not
 			this->radioButton2->TabStop = true;
 			this->radioButton2->Text = L"Output OFF";
 			this->radioButton2->UseVisualStyleBackColor = true;
+			this->radioButton2->CheckedChanged += gcnew System::EventHandler(this, &MyForm::radioButton2_CheckedChanged);
 			// 
 			// tabControl1
 			// 
@@ -406,6 +410,7 @@ bool cancel_var; //var holds whether to stay in loop or not
 			this->button2->TabIndex = 7;
 			this->button2->Text = L"SET!";
 			this->button2->UseVisualStyleBackColor = true;
+			this->button2->Click += gcnew System::EventHandler(this, &MyForm::button2_Click);
 			// 
 			// label8
 			// 
@@ -435,6 +440,7 @@ bool cancel_var; //var holds whether to stay in loop or not
 			this->textBox3->Name = L"textBox3";
 			this->textBox3->Size = System::Drawing::Size(100, 20);
 			this->textBox3->TabIndex = 4;
+
 			// 
 			// textBox2
 			// 
@@ -680,7 +686,7 @@ bool cancel_var; //var holds whether to stay in loop or not
 
 		}
 #pragma endregion
-	
+
 
 	private: System::Void MyForm_Load(System::Object^  sender, System::EventArgs^  e) {
 				 this->label3->Text = ""; //set text to blank
@@ -696,14 +702,72 @@ bool cancel_var; //var holds whether to stay in loop or not
 
 
 			 //connect to device via comm
-private: System::Void button1_Click(System::Object^  sender, System::EventArgs^  e)
-		 {
-			 OpenPort(); //opens port with comm number specifier
-    sprintf_s(Buffer, "*IDN?");
-    SendSCPI(Buffer);
-    //getting instrument ID string
-	this->label3->Text = gcnew String(Buffer); //again, creates system string type via char type
+	private: System::Void button1_Click(System::Object^  sender, System::EventArgs^  e)
+			 {
+				 OpenPort(); //opens port with comm number specifier
+				 sprintf_s(Buffer, "*IDN?");
+				 SendSCPI(Buffer);
+				 //getting instrument ID string
+				 this->label3->Text = gcnew String(Buffer); //again, creates system string type via char type
 
-		 }
+			 }
+
+
+			 //setting output on and off
+	private: System::Void radioButton1_CheckedChanged(System::Object^  sender, System::EventArgs^  e) {
+				 SendSCPI((char*)"Output on");
+			 }
+
+	private: System::Void radioButton2_CheckedChanged(System::Object^  sender, System::EventArgs^  e) {
+				 SendSCPI((char*)"Output off");
+			 }
+
+			 //sending the scpi commands to set current and voltage
+	private: System::Void button2_Click(System::Object^  sender, System::EventArgs^  e) {
+
+				 //error checking
+				 //voltage is negative
+
+				 if (System::Convert::ToDouble(this->textBox2->Text) < 0) //hjave to convert System::String to double
+				 {
+					 this->label18->Text = "Current must be positive";
+					 return;
+				 }
+
+				 //current is negative
+				 if (System::Convert::ToDouble(this->textBox3->Text) < 0)
+				 {
+					 this->label18->Text = "Voltage must be positive";
+					 return;
+				 }
+
+				 //current is too high
+				 if (System::Convert::ToDouble(this->textBox2->Text) > 1.4)
+				 {
+					 this->label18->Text = "Current must be equal to or less than 1.4 A";
+					 return;
+				 }
+
+				 //voltage is too high
+				 if (System::Convert::ToDouble(this->textBox3->Text)  > 35)
+				 {
+					 this->label18->Text = "Voltage must be equal to or less than 35 V";
+					 return;
+				 }
+
+				 std::string current = "CURRENT " + msclr::interop::marshal_as<std::string>(this->textBox2->Text) + "\n"; //create string message to set voltage
+				 const char * curr = current.c_str();
+				 SendSCPI((char*)curr);
+				 SendSCPI((char*)"Output on"); /* Turn output on */
+
+				 //set voltage
+				 std::string voltage1 = "VOLT " + msclr::interop::marshal_as<std::string>(this->textBox3->Text) + "\n"; //create string message to set voltage
+				 const char * volt = voltage1.c_str();
+				 SendSCPI((char*)volt);
+				 this->radioButton1->Checked = true; //default to output radio button checked
+
+			 }
+
+
 };
 }
