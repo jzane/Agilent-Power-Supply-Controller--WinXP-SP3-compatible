@@ -4,6 +4,7 @@
 #include "visa.h"
 #include "visatype.h"
 #include <time.h> //for delay func
+#include <tchar.h>
 
 #pragma once
 
@@ -40,8 +41,13 @@ namespace PSController {
 	double current; /* Value of current output of power supply */
 	bool cancel_var; //var holds whether to stay in loop or not
 
+	double delayTime = 70; //const value of 'x' milliseconds
+	double Vstart;
+	double Vend;
+	double riseTime;
+	double stepSize; //this will change
 
-
+	
 
 
 
@@ -171,6 +177,10 @@ namespace PSController {
 		/// </summary>
 		~MyForm()
 		{
+
+			SendSCPI("*RST");
+			ClosePort();
+
 			if (components)
 			{
 				delete components;
@@ -212,6 +222,8 @@ namespace PSController {
 	private: System::Windows::Forms::Button^  button3;
 	private: System::Windows::Forms::Label^  label17;
 	private: System::Windows::Forms::Label^  label18;
+private: System::Windows::Forms::Button^  button4;
+
 	protected: 
 
 	protected: 
@@ -270,6 +282,7 @@ namespace PSController {
 			this->label9 = (gcnew System::Windows::Forms::Label());
 			this->label17 = (gcnew System::Windows::Forms::Label());
 			this->label18 = (gcnew System::Windows::Forms::Label());
+			this->button4 = (gcnew System::Windows::Forms::Button());
 			this->tabControl1->SuspendLayout();
 			this->tabPage1->SuspendLayout();
 			this->tabPage2->SuspendLayout();
@@ -440,7 +453,6 @@ namespace PSController {
 			this->textBox3->Name = L"textBox3";
 			this->textBox3->Size = System::Drawing::Size(100, 20);
 			this->textBox3->TabIndex = 4;
-
 			// 
 			// textBox2
 			// 
@@ -484,6 +496,7 @@ namespace PSController {
 			// 
 			// tabPage2
 			// 
+			this->tabPage2->Controls->Add(this->button4);
 			this->tabPage2->Controls->Add(this->button3);
 			this->tabPage2->Controls->Add(this->label16);
 			this->tabPage2->Controls->Add(this->textBox7);
@@ -509,12 +522,13 @@ namespace PSController {
 			// 
 			this->button3->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 14.25F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
 				static_cast<System::Byte>(0)));
-			this->button3->Location = System::Drawing::Point(329, 51);
+			this->button3->Location = System::Drawing::Point(290, 52);
 			this->button3->Name = L"button3";
 			this->button3->Size = System::Drawing::Size(106, 45);
 			this->button3->TabIndex = 12;
 			this->button3->Text = L"SET!";
 			this->button3->UseVisualStyleBackColor = true;
+			this->button3->Click += gcnew System::EventHandler(this, &MyForm::button3_Click);
 			// 
 			// label16
 			// 
@@ -655,6 +669,18 @@ namespace PSController {
 			this->label18->TabIndex = 10;
 			this->label18->Text = L"label18";
 			// 
+			// button4
+			// 
+			this->button4->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 14.25F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
+				static_cast<System::Byte>(0)));
+			this->button4->Location = System::Drawing::Point(406, 51);
+			this->button4->Name = L"button4";
+			this->button4->Size = System::Drawing::Size(105, 45);
+			this->button4->TabIndex = 13;
+			this->button4->Text = L"RESET";
+			this->button4->UseVisualStyleBackColor = true;
+			this->button4->Click += gcnew System::EventHandler(this, &MyForm::button4_Click_1);
+			// 
 			// MyForm
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
@@ -698,6 +724,8 @@ namespace PSController {
 				 this->textBox7->Text = "1.4";
 				 this->label18->Text = ""; //set error code to null first
 			 }
+
+
 
 
 
@@ -769,5 +797,123 @@ namespace PSController {
 			 }
 
 
+
+
+			 //sending voltage ramping parameters to device
+	private: System::Void button3_Click(System::Object^  sender, System::EventArgs^  e) {
+				 std::string current = "CURRENT " + msclr::interop::marshal_as<std::string>(this->textBox7->Text) + "\n"; //create string message to set voltage
+				 const char * curr = current.c_str();
+				 SendSCPI((char*)curr);
+				 SendSCPI((char*)"Output on"); /* Turn output on */
+
+				 //check for errors
+				  //do volt ramp calcs
+				 Vstart= System::Convert::ToDouble(this->textBox4->Text); //starting voltage
+
+				 Vend= System::Convert::ToDouble(this->textBox5->Text);//ending voltage
+
+				 riseTime = System::Convert::ToDouble(this->textBox6->Text) * 1000;//2; //rise time converted to milliseconds NOTE: DIVIDING BY 2 B/C ITS TAKING TWICE AS LONG AS IT SHOULD
+				 //stepSize;
+				 stepSize= (delayTime) * (1/riseTime) * (Vend-Vstart); //units will be V/step
+				 int numSteps = (1/delayTime) * riseTime; //number of steps, and integer
+
+				 //error checking
+				 //voltage is negative
+
+				 if (System::Convert::ToDouble(this->textBox4->Text) < 0) //have to convert System::String to double
+				 {
+					 this->label18->Text = "Current must be positive";
+					 return;
+				 }
+
+				 //current is negative
+				 if (System::Convert::ToDouble(this->textBox7->Text) < 0)
+				 {
+					 this->label18->Text = "Voltage must be positive";
+					 return;
+				 }
+
+				 //current is too high
+				 if (System::Convert::ToDouble(this->textBox7->Text) > 1.4)
+				 {
+					 this->label18->Text = "Current must be equal to or less than 1.4 A";
+					 return;
+				 }
+
+				 //voltage is too high
+				 if (System::Convert::ToDouble(this->textBox4->Text)  > 35)
+				 {
+					 this->label18->Text = "Voltage must be equal to or less than 35 V";
+					 return;
+				 }
+
+				 //voltage is negative
+
+				 if (System::Convert::ToDouble(this->textBox5->Text) < 0) //have to convert System::String to double
+				 {
+					 this->label18->Text = "Current must be positive";
+					 return;
+				 }
+
+				  //voltage is too high
+				 if (System::Convert::ToDouble(this->textBox5->Text)  > 35)
+				 {
+					 this->label18->Text = "Voltage must be equal to or less than 35 V";
+					 return;
+				 }
+
+				 //time is greater than 0
+				 if (riseTime <= 0)
+				 {
+					 this->label18->Text = "Rise time must be greater than 0 S";
+					 return;
+				 }
+
+				
+
+
+				 //setting the voltages
+				 if ((Vstart - Vend) <= 0) //positive slope
+				 {
+					 for (double voltage = Vstart; voltage <= Vend; voltage = voltage += stepSize)
+					 {
+						 //set voltage
+						 std::string voltage1 = "VOLT " + std::to_string(voltage) + "\n"; //create string message to set voltage
+						 const char * volt = voltage1.c_str();
+						 SendSCPI((char*)volt);
+						 delay(delayTime);
+						 voltage += stepSize;
+					 }
+
+					 //set voltage
+					 std::string voltage1 = "VOLT " + std::to_string(Vend) + "\n"; //create string message to set voltage
+					 const char * volt = voltage1.c_str();
+					 SendSCPI((char*)volt);
+
+				 }
+
+				 else if ((Vstart - Vend) > 0)//negative slope
+				 {
+					 for (double voltage = Vstart; voltage >= Vend; voltage = voltage += stepSize)
+					 {
+						 //set voltage
+						 std::string voltage1 = "VOLT " + std::to_string(voltage) + "\n"; //create string message to set voltage
+						 const char * volt = voltage1.c_str();
+						 SendSCPI((char*)volt);
+						 delay(delayTime);
+						 voltage += stepSize;
+					 }
+
+					 //set voltage
+					 std::string voltage1 = "VOLT " + std::to_string(Vend) + "\n"; //create string message to set voltage
+					 const char * volt = voltage1.c_str();
+					 SendSCPI((char*)volt);
+
+				 }
+			 }
+
+private: System::Void button4_Click_1(System::Object^  sender, System::EventArgs^  e) {
+			 				 SendSCPI("*RST"); //reset device
+		 }
 };
 }

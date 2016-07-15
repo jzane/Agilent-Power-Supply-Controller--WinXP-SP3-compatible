@@ -41,4 +41,9 @@
   <ItemGroup>
     <Library Include="visa32.lib" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="MyForm.resx">
+      <Filter>Resource Files</Filter>
+    </EmbeddedResource>
+  </ItemGroup>
 </Project>
